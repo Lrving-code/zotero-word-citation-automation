@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Automate DOI verification, Zotero import, and Word docx citation field generation."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
   { name = "Lrving-code" }
 ]
@@ -16,7 +16,6 @@ keywords = ["zotero", "word", "docx", "citations", "crossref", "windows"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: Microsoft :: Windows",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
