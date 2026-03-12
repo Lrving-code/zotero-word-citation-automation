@@ -1,0 +1,41 @@
+{
+  "collection_name": "demo refs",
+  "output_dir": "outputs/run",
+  "output_docx": "outputs/run/demo.docx",
+  "references": [
+    {
+      "cite_key": "Jochem2021",
+      "doi": "10.1177/2399808320921208",
+      "forced_year": 2021
+    }
+  ],
+  "document": {
+    "title": "Minimal Example",
+    "elements": [
+      {
+        "type": "heading",
+        "level": "title",
+        "text": "Minimal Example"
+      },
+      {
+        "type": "paragraph",
+        "segments": [
+          {
+            "text": "Settlement analysis can start from building-footprint evidence "
+          },
+          {
+            "citations": [
+              {
+                "cite_key": "Jochem2021",
+                "display_text": "Jochem et al., 2021"
+              }
+            ]
+          },
+          {
+            "text": "."
+          }
+        ]
+      }
+    ]
+  }
+}
