@@ -197,6 +197,8 @@ An optional Codex skill adapter is included at:
 
 - [integrations/codex-skill/SKILL.md](integrations/codex-skill/SKILL.md)
 
+The canonical skill name is `zotero-wordflow`. Older local aliases are considered retired and should be removed during reinstall.
+
 Install it on a Windows machine with:
 
 ```powershell

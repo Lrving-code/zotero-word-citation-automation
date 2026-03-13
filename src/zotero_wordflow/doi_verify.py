@@ -8,7 +8,7 @@ import requests
 from .models import ReferenceSeed
 
 
-USER_AGENT = "zotero-wordflow/0.1.3 (mailto:local@example.com)"
+USER_AGENT = "zotero-wordflow/0.1.4 (mailto:local@example.com)"
 
 
 def normalize_title(title: str) -> str:

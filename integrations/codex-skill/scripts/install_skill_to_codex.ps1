@@ -21,26 +21,14 @@ function Copy-SharedSkillFiles {
     Copy-Item (Join-Path $projectRoot "run_zotero_wordflow.py") (Join-Path $TargetSkillDir "scripts\run_zotero_wordflow.py") -Force
 }
 
-function Write-LegacyAliasSkill {
-    param([string]$TargetSkillDir)
-
-    $canonicalSkillPath = Join-Path $projectRoot "..\SKILL.md"
-    $canonicalSkill = Get-Content $canonicalSkillPath -Raw
-    $legacySkill = $canonicalSkill `
-        -replace '(?m)^name:\s+zotero-wordflow$', 'name: zotero-word-citation-automation' `
-        -replace '(?m)^description:\s+.*$', 'description: Compatibility alias for zotero-wordflow. Use this skill when an older thread still refers to the previous skill name but the workflow should remain the same.' `
-        -replace '(?m)^# zotero-wordflow$', "# Zotero Word Citation Automation`r`n`r`nThis is a compatibility alias for the canonical ``zotero-wordflow`` skill."
-    Set-Content -Path (Join-Path $TargetSkillDir "SKILL.md") -Value $legacySkill -Encoding UTF8
-}
-
 Initialize-SkillLayout -TargetSkillDir $canonicalSkillDir
 Copy-Item (Join-Path $projectRoot "..\SKILL.md") (Join-Path $canonicalSkillDir "SKILL.md") -Force
 Copy-SharedSkillFiles -TargetSkillDir $canonicalSkillDir
 
-Initialize-SkillLayout -TargetSkillDir $legacySkillDir
-Write-LegacyAliasSkill -TargetSkillDir $legacySkillDir
-Copy-SharedSkillFiles -TargetSkillDir $legacySkillDir
+if (Test-Path $legacySkillDir) {
+    Remove-Item -Path $legacySkillDir -Recurse -Force
+}
 
 Write-Host "Installed canonical skill to $canonicalSkillDir"
-Write-Host "Installed compatibility alias to $legacySkillDir"
+Write-Host "Removed retired legacy skill alias at $legacySkillDir"
 Write-Host "Make sure 'python -m pip install zotero-wordflow' has been run in the active Python environment."

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-03-13
+
+### Changed
+
+- Retired the local `zotero-word-citation-automation` skill alias and standardized on `zotero-wordflow` as the only supported Codex skill name.
+- Updated the installer to remove the retired alias directory during reinstall instead of recreating it.
+- Aligned runtime metadata by updating the Crossref user agent string to `0.1.4`.
+
 ## [0.1.3] - 2026-03-13
 
 ### Fixed
