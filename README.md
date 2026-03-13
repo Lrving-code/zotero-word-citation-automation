@@ -179,9 +179,9 @@ powershell -ExecutionPolicy Bypass -File scripts\smoke_test.ps1
 
 ## Roadmap
 
-- support narrative citations such as `Smith (2020)`
 - add richer test fixtures for mixed-language author-year prose
 - expose a safer dry-run mode for Zotero import planning
+- support broader narrative forms beyond the current simple cases
 - document GitHub Actions packaging and release flow
 
 ## Documentation

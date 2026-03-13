@@ -24,32 +24,12 @@ function Copy-SharedSkillFiles {
 function Write-LegacyAliasSkill {
     param([string]$TargetSkillDir)
 
-    $legacySkill = @'
----
-name: zotero-word-citation-automation
-description: Compatibility alias for zotero-wordflow. Use this skill when an older thread still refers to the previous skill name but the workflow should remain the same.
-version: 0.1.2
----
-
-# Zotero Word Citation Automation
-
-This is a compatibility alias for the canonical `zotero-wordflow` skill.
-
-Use the same workflow:
-
-1. Prefer `python -m zotero_wordflow from-text ...`
-2. If debugging manifest content is necessary, run:
-   - `scripts/build_manifest_from_natural_text.py`
-3. Then run:
-   - `scripts/run_zotero_wordflow.py`
-4. Return the generated `.docx` path and remind the user to run `Refresh` and `Add/Edit Bibliography` inside Word.
-
-## Robustness notes
-
-- UTF-8 BOM input files should be accepted automatically.
-- Grouped citations should be emitted as one Zotero field; avoid hand-editing manifests into multiple one-item fields inside the same bracket group.
-- Simple narrative citations such as `Smith (2020)` are supported.
-'@
+    $canonicalSkillPath = Join-Path $projectRoot "..\SKILL.md"
+    $canonicalSkill = Get-Content $canonicalSkillPath -Raw
+    $legacySkill = $canonicalSkill `
+        -replace '(?m)^name:\s+zotero-wordflow$', 'name: zotero-word-citation-automation' `
+        -replace '(?m)^description:\s+.*$', 'description: Compatibility alias for zotero-wordflow. Use this skill when an older thread still refers to the previous skill name but the workflow should remain the same.' `
+        -replace '(?m)^# zotero-wordflow$', "# Zotero Word Citation Automation`r`n`r`nThis is a compatibility alias for the canonical ``zotero-wordflow`` skill."
     Set-Content -Path (Join-Path $TargetSkillDir "SKILL.md") -Value $legacySkill -Encoding UTF8
 }
 

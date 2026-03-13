@@ -174,3 +174,31 @@ def test_narrative_citation_is_converted_with_suppressed_author(tmp_path: Path) 
     assert segments[1]["suffix"] == ")"
     assert segments[1]["citations"][0]["display_text"] == "2020"
     assert segments[1]["citations"][0]["suppress_author"] is True
+
+
+def test_two_author_narrative_citation_accepts_and_form(tmp_path: Path) -> None:
+    prose = tmp_path / "prose.txt"
+    refs = tmp_path / "refs.txt"
+    manifest = tmp_path / "manifest.json"
+    prose.write_text(
+        "Dark and Bram (2007) discuss the MAUP problem directly.",
+        encoding="utf-8",
+    )
+    refs.write_text(
+        "Dark, S. J., & Bram, D. (2007). The modifiable areal unit problem (MAUP) in physical geography. Progress in Physical Geography, 31(5), 471-479. https://doi.org/10.1177/0309133307083294",
+        encoding="utf-8",
+    )
+    payload = build_manifest_from_files(
+        text_path=prose,
+        references_path=refs,
+        collection_name="demo",
+        output_manifest_path=manifest,
+        output_dir="outputs/run",
+        output_docx="outputs/run/out.docx",
+        desktop_copy_path=None,
+    )
+    segments = payload["document"]["elements"][0]["segments"]
+    assert segments[0]["text"] == "Dark and Bram "
+    assert segments[1]["citations"][0]["cite_key"] == "Dark2007"
+    assert segments[1]["citations"][0]["display_text"] == "2007"
+    assert segments[1]["citations"][0]["suppress_author"] is True

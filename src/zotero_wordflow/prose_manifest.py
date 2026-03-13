@@ -10,7 +10,6 @@ DOI_PATTERN = re.compile(r"(10\.\d{4,9}/[-._;()/:A-Z0-9]+)", re.IGNORECASE)
 YEAR_PATTERN = re.compile(r"\((\d{4}[a-z]?)\)")
 HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*\.?)\s+(.+)$")
 PAREN_CITATION_PATTERN = re.compile(r"[(\uFF08]([^()\uFF08\uFF09]*\d{4}[a-z]?[^()\uFF08\uFF09]*)[)\uFF09]")
-VARIANT_YEAR_PATTERN = re.compile(r"^(?P<author>.+), (?P<year>\d{4}[a-z]?)$")
 
 
 def strip_invisible_prefixes(text: str) -> str:
@@ -68,10 +67,13 @@ def parse_reference_line(line: str, occurrence_count: dict[str, int]) -> dict[st
 
     if len(surnames) == 1:
         display_text = f"{surnames[0]}, {year}" if year else surnames[0]
+        narrative_authors = (surnames[0],)
     elif len(surnames) == 2:
         display_text = f"{surnames[0]} & {surnames[1]}, {year}" if year else f"{surnames[0]} & {surnames[1]}"
+        narrative_authors = (f"{surnames[0]} & {surnames[1]}", f"{surnames[0]} and {surnames[1]}")
     else:
         display_text = f"{surnames[0]} et al., {year}" if year else f"{surnames[0]} et al."
+        narrative_authors = (f"{surnames[0]} et al.", f"{surnames[0]} et al")
 
     key_base = f"{slug_author_token(surnames[0])}{year or 'NA'}"
     occurrence_count[key_base] = occurrence_count.get(key_base, 0) + 1
@@ -87,6 +89,7 @@ def parse_reference_line(line: str, occurrence_count: dict[str, int]) -> dict[st
         "doi": doi.lower(),
         "forced_year": year,
         "variants": tuple(sorted(variants)),
+        "narrative_authors": narrative_authors,
     }
 
 
@@ -132,11 +135,7 @@ def build_narrative_patterns(references: list[dict[str, Any]]) -> list[tuple[str
     patterns: list[tuple[str, re.Pattern[str]]] = []
     seen_authors: set[str] = set()
     for ref in references:
-        for variant in ref["variants"]:
-            variant_match = VARIANT_YEAR_PATTERN.match(variant)
-            if not variant_match:
-                continue
-            author_phrase = variant_match.group("author")
+        for author_phrase in ref.get("narrative_authors", ()):
             if author_phrase in seen_authors:
                 continue
             seen_authors.add(author_phrase)

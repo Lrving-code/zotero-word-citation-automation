@@ -2,13 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-03-13
+
+### Fixed
+
+- Accepted the `and` form in two-author narrative citations such as `Dark and Bram (2007)`.
+- Aligned runtime metadata by updating the Crossref user agent string to `0.1.3`.
+- Removed the README roadmap contradiction after narrative citation support shipped.
+- Changed the Codex installer so the legacy skill alias is derived from the canonical skill instead of drifting as a separate hard-coded copy.
+
 ## [0.1.2] - 2026-03-13
 
 ### Fixed
 
 - Rendered one parenthetical citation group as one Zotero field instead of stacking multiple one-item fields inside the same brackets.
 - Added helper support for simple narrative citations such as `Smith (2020)`.
+- Accepted the `and` form in two-author narrative citations such as `Dark and Bram (2007)`.
 - Kept grouped and narrative citation rendering aligned with Zotero field semantics by using multi-item citation payloads and `suppressAuthor` where needed.
+- Aligned runtime metadata by updating the Crossref user agent string to `0.1.2`.
+- Changed the Codex installer so the legacy skill alias is derived from the canonical skill instead of drifting as a separate hard-coded copy.
 
 ### Added
 

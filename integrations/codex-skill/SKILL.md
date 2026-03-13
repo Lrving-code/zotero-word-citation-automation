@@ -1,7 +1,7 @@
 ﻿---
 name: zotero-wordflow
 description: This skill should be used when the user asks to generate a Word document with Zotero citations, import DOI-verified references into Zotero, or turn prose plus references into a bibliography-ready docx.
-version: 0.1.2
+version: 0.1.3
 ---
 
 # zotero-wordflow
