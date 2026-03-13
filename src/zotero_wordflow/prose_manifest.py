@@ -12,8 +12,19 @@ HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*\.?)\s+(.+)$")
 PAREN_CITATION_PATTERN = re.compile(r"[(\uFF08]([^()\uFF08\uFF09]*\d{4}[a-z]?[^()\uFF08\uFF09]*)[)\uFF09]")
 
 
+def strip_invisible_prefixes(text: str) -> str:
+    return (
+        text.replace("\ufeff", "")
+        .replace("\u200b", "")
+        .replace("\u200c", "")
+        .replace("\u200d", "")
+        .replace("\u2060", "")
+    )
+
+
 def normalize_space(text: str) -> str:
-    return " ".join(text.replace("\u3000", " ").split()).strip()
+    cleaned = strip_invisible_prefixes(text)
+    return " ".join(cleaned.replace("\u3000", " ").split()).strip()
 
 
 def normalize_citation_text(text: str) -> str:
@@ -85,8 +96,8 @@ def parse_references(reference_text: str) -> list[dict[str, Any]]:
 
 
 def group_blocks(text: str) -> list[str]:
-    clean = text.replace("\r\n", "\n").strip()
-    return [block.strip() for block in re.split(r"\n\s*\n", clean) if block.strip()]
+    clean = strip_invisible_prefixes(text).replace("\r\n", "\n").strip()
+    return [strip_invisible_prefixes(block).strip() for block in re.split(r"\n\s*\n", clean) if block.strip()]
 
 
 def heading_level(numbering: str) -> int:
@@ -147,6 +158,7 @@ def build_document_elements(text: str, references: list[dict[str, Any]]) -> list
     lookup = build_citation_lookup(references)
     elements: list[dict[str, Any]] = []
     for block in group_blocks(text):
+        block = strip_invisible_prefixes(block)
         heading_match = HEADING_PATTERN.match(block)
         if heading_match and "\n" not in block:
             elements.append({"type": "heading", "level": heading_level(heading_match.group(1)), "text": block})
@@ -207,8 +219,8 @@ def build_manifest_from_files(
     output_docx: str,
     desktop_copy_path: str | None,
 ) -> dict[str, Any]:
-    prose_text = text_path.read_text(encoding="utf-8")
-    reference_text = references_path.read_text(encoding="utf-8")
+    prose_text = text_path.read_text(encoding="utf-8-sig")
+    reference_text = references_path.read_text(encoding="utf-8-sig")
     return build_manifest(
         collection_name=collection_name,
         prose_text=prose_text,

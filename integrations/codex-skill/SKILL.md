@@ -1,7 +1,7 @@
 ﻿---
 name: zotero-wordflow
 description: This skill should be used when the user asks to generate a Word document with Zotero citations, import DOI-verified references into Zotero, or turn prose plus references into a bibliography-ready docx.
-version: 0.1.0
+version: 0.1.1
 ---
 
 # zotero-wordflow
@@ -29,11 +29,19 @@ python -m pip install -e .
 
 ## Workflow
 
-1. If the user gives prose and references, run:
+1. If the user gives prose and references, prefer:
+   - `python -m zotero_wordflow from-text ...`
+2. If debugging manifest content is necessary, run:
    - `scripts/build_manifest_from_natural_text.py`
-2. Then run:
+3. Then run:
    - `scripts/run_zotero_wordflow.py`
-3. Return the generated `.docx` path and remind the user to run `Refresh` and `Add/Edit Bibliography` inside Word.
+4. Return the generated `.docx` path and remind the user to run `Refresh` and `Add/Edit Bibliography` inside Word.
+
+## Robustness notes
+
+- UTF-8 BOM input files should be accepted automatically.
+- Do not parallelize `build-manifest` and `run`; `run` depends on the manifest file already existing.
+- Prefer manifest-relative output paths when the workspace contains non-ASCII folder names on Windows.
 
 ## Reference Files
 

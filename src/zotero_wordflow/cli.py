@@ -89,6 +89,25 @@ def build_manifest_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def from_text_command(args: argparse.Namespace) -> int:
+    output_manifest = Path(args.output_manifest).expanduser().resolve()
+    manifest = build_manifest_from_files(
+        text_path=Path(args.text),
+        references_path=Path(args.references),
+        collection_name=args.collection_name,
+        output_manifest_path=output_manifest,
+        output_dir=args.output_dir,
+        output_docx=args.output_docx,
+        desktop_copy_path=args.desktop_copy_path,
+    )
+    write_json(output_manifest, manifest)
+    outputs = run_from_manifest(output_manifest)
+    print(f"manifest={output_manifest}")
+    for key, value in outputs.items():
+        print(f"{key}={value}")
+    return 0
+
+
 def run_command(args: argparse.Namespace) -> int:
     outputs = run_from_manifest(Path(args.manifest).resolve())
     for key, value in outputs.items():
@@ -96,19 +115,30 @@ def run_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def add_text_build_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--text", required=True)
+    parser.add_argument("--references", required=True)
+    parser.add_argument("--collection-name", required=True)
+    parser.add_argument("--output-manifest", required=True)
+    parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--output-docx", required=True)
+    parser.add_argument("--desktop-copy-path")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Zotero Word citation automation.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     build_manifest_parser = subparsers.add_parser("build-manifest", help="Build a manifest from prose and references.")
-    build_manifest_parser.add_argument("--text", required=True)
-    build_manifest_parser.add_argument("--references", required=True)
-    build_manifest_parser.add_argument("--collection-name", required=True)
-    build_manifest_parser.add_argument("--output-manifest", required=True)
-    build_manifest_parser.add_argument("--output-dir", required=True)
-    build_manifest_parser.add_argument("--output-docx", required=True)
-    build_manifest_parser.add_argument("--desktop-copy-path")
+    add_text_build_arguments(build_manifest_parser)
     build_manifest_parser.set_defaults(func=build_manifest_command)
+
+    from_text_parser = subparsers.add_parser(
+        "from-text",
+        help="Build a manifest from prose and references, then immediately run the Zotero workflow.",
+    )
+    add_text_build_arguments(from_text_parser)
+    from_text_parser.set_defaults(func=from_text_command)
 
     run_parser = subparsers.add_parser("run", help="Verify references, import to Zotero, and generate a docx.")
     run_parser.add_argument("--manifest", required=True)

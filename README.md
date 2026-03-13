@@ -24,6 +24,8 @@ It also includes a helper that converts:
 
 into a manifest JSON that the main workflow can run.
 
+The workflow is tolerant of UTF-8 with BOM input files, which is common on Windows when text files are written by PowerShell or Word-adjacent tooling.
+
 ## Who this is for
 
 - researchers writing papers in Word with Zotero
@@ -88,6 +90,20 @@ zotero-wordflow build-manifest `
 
 ```powershell
 zotero-wordflow run --manifest outputs\manifest.json
+```
+
+### Preferred single-step workflow
+
+If the starting point is plain prose plus a reference list, prefer the sequential command below. It builds the manifest and immediately runs the Zotero workflow in one process, which avoids race conditions between separate shell steps:
+
+```powershell
+zotero-wordflow from-text `
+  --text examples\sample_prose.txt `
+  --references examples\sample_references.txt `
+  --collection-name "julei refs" `
+  --output-manifest outputs\manifest.json `
+  --output-dir outputs\run `
+  --output-docx outputs\run\sample.docx
 ```
 
 ### 3. Finish inside Word
@@ -158,6 +174,7 @@ powershell -ExecutionPolicy Bypass -File scripts\smoke_test.ps1
 - this project targets local Zotero desktop storage and Word on Windows
 - the prose helper currently supports parenthetical author-year groups, not narrative citations
 - the final bibliography insertion still happens inside Word through the Zotero add-in
+- terminal output on legacy non-UTF-8 Windows shells can still display mojibake for some Chinese paths, even though file I/O is handled in UTF-8
 
 ## Roadmap
 
