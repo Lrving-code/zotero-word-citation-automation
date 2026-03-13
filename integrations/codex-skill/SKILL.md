@@ -1,7 +1,7 @@
 ﻿---
 name: zotero-wordflow
 description: This skill should be used when the user asks to generate a Word document with Zotero citations, import DOI-verified references into Zotero, or turn prose plus references into a bibliography-ready docx.
-version: 0.1.1
+version: 0.1.2
 ---
 
 # zotero-wordflow
@@ -42,6 +42,7 @@ python -m pip install -e .
 - UTF-8 BOM input files should be accepted automatically.
 - Do not parallelize `build-manifest` and `run`; `run` depends on the manifest file already existing.
 - Prefer manifest-relative output paths when the workspace contains non-ASCII folder names on Windows.
+- Grouped citations should be emitted as one Zotero field; avoid hand-editing manifests into multiple one-item fields inside the same bracket group.
 
 ## Reference Files
 
@@ -51,5 +52,5 @@ python -m pip install -e .
 ## Limits
 
 - Parenthetical author-year citations are supported.
-- Narrative citations such as `Smith (2020)` are not automatically converted.
+- Simple narrative citations such as `Smith (2020)` are supported.
 - Ambiguous or unresolved citation groups should fail loudly, not be silently downgraded.

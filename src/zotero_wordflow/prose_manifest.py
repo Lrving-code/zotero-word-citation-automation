@@ -10,6 +10,7 @@ DOI_PATTERN = re.compile(r"(10\.\d{4,9}/[-._;()/:A-Z0-9]+)", re.IGNORECASE)
 YEAR_PATTERN = re.compile(r"\((\d{4}[a-z]?)\)")
 HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*\.?)\s+(.+)$")
 PAREN_CITATION_PATTERN = re.compile(r"[(\uFF08]([^()\uFF08\uFF09]*\d{4}[a-z]?[^()\uFF08\uFF09]*)[)\uFF09]")
+VARIANT_YEAR_PATTERN = re.compile(r"^(?P<author>.+), (?P<year>\d{4}[a-z]?)$")
 
 
 def strip_invisible_prefixes(text: str) -> str:
@@ -123,6 +124,31 @@ def build_citation_lookup(references: list[dict[str, Any]]) -> dict[str, dict[st
     return {key: refs[0] for key, refs in buckets.items()}
 
 
+def author_regex(author_phrase: str) -> str:
+    return re.sub(r"\\ ", r"\\s+", re.escape(author_phrase))
+
+
+def build_narrative_patterns(references: list[dict[str, Any]]) -> list[tuple[str, re.Pattern[str]]]:
+    patterns: list[tuple[str, re.Pattern[str]]] = []
+    seen_authors: set[str] = set()
+    for ref in references:
+        for variant in ref["variants"]:
+            variant_match = VARIANT_YEAR_PATTERN.match(variant)
+            if not variant_match:
+                continue
+            author_phrase = variant_match.group("author")
+            if author_phrase in seen_authors:
+                continue
+            seen_authors.add(author_phrase)
+            pattern = re.compile(
+                rf"(?<!\w)(?P<author>{author_regex(author_phrase)})(?P<spacing>\s*)(?P<open>[(\uFF08])"
+                rf"(?P<years>\d{{4}}[a-z]?(?:\s*[;\uFF1B]\s*\d{{4}}[a-z]?)*)(?P<close>[)\uFF09])"
+            )
+            patterns.append((author_phrase, pattern))
+    patterns.sort(key=lambda item: len(item[0]), reverse=True)
+    return patterns
+
+
 def parse_citation_group(content: str, lookup: dict[str, dict[str, Any]]) -> list[dict[str, str]] | None:
     parts = [normalize_citation_text(part) for part in re.split(r"[;\uFF1B]", content) if normalize_citation_text(part)]
     citations: list[dict[str, str]] = []
@@ -134,18 +160,110 @@ def parse_citation_group(content: str, lookup: dict[str, dict[str, Any]]) -> lis
     return citations
 
 
-def paragraph_to_segments(paragraph: str, lookup: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def parse_narrative_group(
+    author_phrase: str,
+    years_text: str,
+    lookup: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]] | None:
+    years = [normalize_space(part) for part in re.split(r"[;\uFF1B]", years_text) if normalize_space(part)]
+    citations: list[dict[str, Any]] = []
+    for year in years:
+        lookup_key = normalize_citation_text(f"{author_phrase}, {year}")
+        ref = lookup.get(lookup_key)
+        if ref is None:
+            return None
+        citations.append({"cite_key": ref["cite_key"], "display_text": year, "suppress_author": True})
+    return citations
+
+
+def find_next_narrative_match(
+    paragraph: str,
+    cursor: int,
+    lookup: dict[str, dict[str, Any]],
+    patterns: list[tuple[str, re.Pattern[str]]],
+) -> dict[str, Any] | None:
+    best_match: dict[str, Any] | None = None
+    for author_phrase, pattern in patterns:
+        match = pattern.search(paragraph, cursor)
+        if match is None:
+            continue
+        citations = parse_narrative_group(author_phrase, match.group("years"), lookup)
+        if citations is None:
+            continue
+        candidate = {
+            "start": match.start(),
+            "end": match.end(),
+            "open_start": match.start("open"),
+            "citations": citations,
+            "prefix": match.group("open"),
+            "suffix": match.group("close"),
+        }
+        if best_match is None:
+            best_match = candidate
+            continue
+        if candidate["start"] < best_match["start"]:
+            best_match = candidate
+            continue
+        if candidate["start"] == best_match["start"] and candidate["end"] > best_match["end"]:
+            best_match = candidate
+    return best_match
+
+
+def paragraph_to_segments(
+    paragraph: str,
+    lookup: dict[str, dict[str, Any]],
+    narrative_patterns: list[tuple[str, re.Pattern[str]]],
+) -> list[dict[str, Any]]:
     segments: list[dict[str, Any]] = []
     cursor = 0
-    for match in PAREN_CITATION_PATTERN.finditer(paragraph):
-        start, end = match.span()
+    while cursor < len(paragraph):
+        parenthetical_match = PAREN_CITATION_PATTERN.search(paragraph, cursor)
+        narrative_match = find_next_narrative_match(paragraph, cursor, lookup, narrative_patterns)
+
+        next_kind: str | None = None
+        if parenthetical_match is not None:
+            next_kind = "parenthetical"
+            next_start = parenthetical_match.start()
+        else:
+            next_start = len(paragraph) + 1
+
+        if narrative_match is not None and narrative_match["start"] <= next_start:
+            next_kind = "narrative"
+
+        if next_kind is None:
+            segments.append({"text": paragraph[cursor:]})
+            cursor = len(paragraph)
+            break
+
+        if next_kind == "narrative":
+            assert narrative_match is not None
+            if narrative_match["open_start"] > cursor:
+                segments.append({"text": paragraph[cursor : narrative_match["open_start"]]})
+            segments.append(
+                {
+                    "citations": narrative_match["citations"],
+                    "prefix": narrative_match["prefix"],
+                    "suffix": narrative_match["suffix"],
+                }
+            )
+            cursor = narrative_match["end"]
+            continue
+
+        assert parenthetical_match is not None
+        start, end = parenthetical_match.span()
         if start > cursor:
             segments.append({"text": paragraph[cursor:start]})
-        citations = parse_citation_group(match.group(1), lookup)
+        citations = parse_citation_group(parenthetical_match.group(1), lookup)
         if citations is None:
             snippet = paragraph[:120] + ("..." if len(paragraph) > 120 else "")
-            raise ValueError(f"Unresolved citation group {match.group(0)!r} in paragraph: {snippet}")
-        segments.append({"citations": citations})
+            raise ValueError(f"Unresolved citation group {parenthetical_match.group(0)!r} in paragraph: {snippet}")
+        segments.append(
+            {
+                "citations": citations,
+                "prefix": parenthetical_match.group(0)[0],
+                "suffix": parenthetical_match.group(0)[-1],
+            }
+        )
         cursor = end
     if cursor < len(paragraph):
         segments.append({"text": paragraph[cursor:]})
@@ -156,6 +274,7 @@ def paragraph_to_segments(paragraph: str, lookup: dict[str, dict[str, Any]]) -> 
 
 def build_document_elements(text: str, references: list[dict[str, Any]]) -> list[dict[str, Any]]:
     lookup = build_citation_lookup(references)
+    narrative_patterns = build_narrative_patterns(references)
     elements: list[dict[str, Any]] = []
     for block in group_blocks(text):
         block = strip_invisible_prefixes(block)
@@ -164,7 +283,7 @@ def build_document_elements(text: str, references: list[dict[str, Any]]) -> list
             elements.append({"type": "heading", "level": heading_level(heading_match.group(1)), "text": block})
             continue
         paragraph_text = block.replace("\n", " ").strip()
-        elements.append({"type": "paragraph", "segments": paragraph_to_segments(paragraph_text, lookup)})
+        elements.append({"type": "paragraph", "segments": paragraph_to_segments(paragraph_text, lookup, narrative_patterns)})
     return elements
 
 

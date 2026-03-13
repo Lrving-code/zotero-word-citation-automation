@@ -63,9 +63,29 @@ Special case:
       "citations": [
         { "cite_key": "Smith2020", "display_text": "Smith et al., 2020" },
         { "cite_key": "Jones2021", "display_text": "Jones & Li, 2021" }
-      ]
+      ],
+      "prefix": "(",
+      "suffix": ")"
     },
     { "text": "Plain text after the citation." }
+  ]
+}
+```
+
+For helper-generated narrative citations such as `Smith (2020)`, the manifest can also contain:
+
+```json
+{
+  "type": "paragraph",
+  "segments": [
+    { "text": "Smith " },
+    {
+      "citations": [
+        { "cite_key": "Smith2020", "display_text": "2020", "suppress_author": true }
+      ],
+      "prefix": "(",
+      "suffix": ")"
+    }
   ]
 }
 ```
@@ -73,5 +93,5 @@ Special case:
 ## Helper limitations
 
 - parenthetical author-year citations are supported
+- simple narrative citations such as `Smith (2020)` are supported
 - ambiguous author-year collisions stop the helper with an error
-- narrative citations such as `Smith (2020)` are not automatically converted yet

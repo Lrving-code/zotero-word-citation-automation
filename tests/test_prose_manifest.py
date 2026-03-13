@@ -145,3 +145,32 @@ def test_zero_width_characters_are_stripped_from_headings_and_citations(tmp_path
     assert payload["document"]["elements"][1]["text"] == "2. Background"
     citations = payload["document"]["elements"][2]["segments"][1]["citations"]
     assert citations[0]["cite_key"] == "Boscoe2012"
+
+
+def test_narrative_citation_is_converted_with_suppressed_author(tmp_path: Path) -> None:
+    prose = tmp_path / "prose.txt"
+    refs = tmp_path / "refs.txt"
+    manifest = tmp_path / "manifest.json"
+    prose.write_text(
+        "Smith (2020) argues that the workflow should stay reproducible.",
+        encoding="utf-8",
+    )
+    refs.write_text(
+        "Smith, A. (2020). Paper One. Journal A. https://doi.org/10.1000/one",
+        encoding="utf-8",
+    )
+    payload = build_manifest_from_files(
+        text_path=prose,
+        references_path=refs,
+        collection_name="demo",
+        output_manifest_path=manifest,
+        output_dir="outputs/run",
+        output_docx="outputs/run/out.docx",
+        desktop_copy_path=None,
+    )
+    segments = payload["document"]["elements"][0]["segments"]
+    assert segments[0]["text"] == "Smith "
+    assert segments[1]["prefix"] == "("
+    assert segments[1]["suffix"] == ")"
+    assert segments[1]["citations"][0]["display_text"] == "2020"
+    assert segments[1]["citations"][0]["suppress_author"] is True

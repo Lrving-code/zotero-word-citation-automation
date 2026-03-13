@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-03-13
+
+### Fixed
+
+- Rendered one parenthetical citation group as one Zotero field instead of stacking multiple one-item fields inside the same brackets.
+- Added helper support for simple narrative citations such as `Smith (2020)`.
+- Kept grouped and narrative citation rendering aligned with Zotero field semantics by using multi-item citation payloads and `suppressAuthor` where needed.
+
+### Added
+
+- Added XML-level rendering tests for grouped citations and narrative citation fields.
+
 ## [0.1.1] - 2026-03-13
 
 ### Fixed

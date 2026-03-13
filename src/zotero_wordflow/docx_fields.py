@@ -9,18 +9,42 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
 
-def citation_code(cite_key: str, display_text: str, item_id: int, uri: str) -> str:
+def citation_code(citation_id: str, display_text: str, citation_items: list[dict[str, Any]]) -> str:
     payload = {
-        "citationID": cite_key,
+        "citationID": citation_id,
         "properties": {"formattedCitation": display_text, "plainCitation": display_text, "noteIndex": 0},
-        "citationItems": [{"id": item_id, "uris": [uri], "itemData": {"id": item_id, "type": "article-journal"}}],
+        "citationItems": citation_items,
         "schema": "https://github.com/citation-style-language/schema/raw/master/csl-citation.json",
     }
     return " ADDIN ZOTERO_ITEM CSL_CITATION " + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
-def add_zotero_field(paragraph, item: dict[str, Any], display_text: str) -> None:
-    instr = citation_code(item["cite_key"], display_text, item["item_id"], item["uri"])
+def build_citation_items(entries: list[dict[str, Any]], zotero_map: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    citation_items: list[dict[str, Any]] = []
+    for entry in entries:
+        item = zotero_map[entry["cite_key"]]
+        citation_item = {
+            "id": item["item_id"],
+            "uris": [item["uri"]],
+            "itemData": {"id": item["item_id"], "type": "article-journal"},
+        }
+        if entry.get("suppress_author"):
+            citation_item["suppressAuthor"] = True
+        citation_items.append(citation_item)
+    return citation_items
+
+
+def citation_display_text(segment: dict[str, Any]) -> str:
+    prefix = segment.get("prefix", "(")
+    suffix = segment.get("suffix", ")")
+    body = "; ".join(entry["display_text"] for entry in segment["citations"])
+    return f"{prefix}{body}{suffix}"
+
+
+def add_zotero_field(paragraph, segment: dict[str, Any], zotero_map: dict[str, dict[str, Any]]) -> None:
+    citation_id = "_".join(entry["cite_key"] for entry in segment["citations"])
+    display_text = citation_display_text(segment)
+    instr = citation_code(citation_id, display_text, build_citation_items(segment["citations"], zotero_map))
     run_begin = paragraph.add_run()
     fld_begin = OxmlElement("w:fldChar")
     fld_begin.set(qn("w:fldCharType"), "begin")
@@ -59,12 +83,6 @@ def render_document(manifest: dict[str, Any], import_result: dict[str, Any], out
             if "text" in segment:
                 paragraph.add_run(segment["text"])
                 continue
-            paragraph.add_run(segment.get("prefix", "("))
-            for index, entry in enumerate(segment["citations"]):
-                if index:
-                    paragraph.add_run("; ")
-                item = zotero_map[entry["cite_key"]]
-                add_zotero_field(paragraph, item, entry["display_text"])
-            paragraph.add_run(segment.get("suffix", ")"))
+            add_zotero_field(paragraph, segment, zotero_map)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(output_path)
